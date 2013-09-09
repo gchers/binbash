@@ -53,8 +53,7 @@
 
 var username = 'darkjoker';
 var hostname = 'localhost';
-/*var mainDir = <?php echo json_encode(getcwd()); ?> */
-var directory = '~'; // rename to curDir
+var directory = '~';
 var prompt;
 var history = Array ();
 var histPos = 0;
@@ -125,50 +124,6 @@ function initStuff () {
 	document.getElementById('cmdIn').innerHTML = promptHTML;
 	document.getElementById('prompt').innerHTML = prompt;
 	document.getElementById('cmd').focus(); // "workaround" for firefox (and probably summin' else)
-}
-
-function execCommand(type,request) {
-	if (window.XMLHttpRequest) {
-		// code for IE7+, Firefox, Chrome, Opera, Safari
-		xmlhttp=new XMLHttpRequest();
-  	} else {
-  		// code for IE6, IE5
-  		xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
-	}
-	if (xmlhttp) {
-		xmlhttp.open("GET","./cmd.php?" + request, true);
-		xmlhttp.send();
-		
-		xmlhttp.onreadystatechange=function() {
-			if (xmlhttp.readyState==4 && xmlhttp.status==200) {
-				if (type == 'cd') {
-					directory = xmlhttp.responseText;
-					//printPrompt(cmd,directory);
-					return "<br>";
-				}
-			}
-    }
-  }
-	/*ajax = XMLHttpRequest();
-	if (ajax) {
-		ajax.open("post","cmd.php", true);
-		ajax.setRequestHeader("content-type","application/x-www-form-urlencoded");
-		ajax.send(request);
-		ajax.setRequestHeader(“connection”, “close”);
-		ajax.onreadystatechange = function() {
-		if(ajax.readyState === readyState.COMPLETATO) {
-        	if(statusText[ajax.status] === “OK”)
-          		return ajax.responseText;
-        }
-        else {
-          elemento.innerHTML = “Impossibile effettuare l’operazione richiesta.<br />”;
-          elemento.innerHTML += “Errore riscontrato: ” + statusText[ajax.status];
-        }
-      } 
-    }
-	} else {
-		return "Ajax error";
-	}*/
 }
 
 function getOutput (cmd) {
@@ -262,24 +217,27 @@ function getOutput (cmd) {
 			break;
 		
 		case 'cd':
-			/* Ignores other parameters *
+			/* Ignores other parameters */
 			for (i=1;i<argc;i++) {
 				if (argv[i].charAt(0)!='-' && argv[i]) {
 					break;
 				}
-			}*/
-			if (argc == 1) {
+			}
+			if (i==argc) {
 				// cd -> cd ~
-				dir = mainDir;
+				dir = '~';
 			}
 			else {
-				dir = argv[1];
+				if (argv[i].charAt(0)!='/' && argv[i].charAt(0)!='~') {
+					dir = directory+'/'+argv[i];
+				}
+				else {
+					dir = argv[i];
+				}
 			}
 			
-			output = execCommand("action=cd&dir=" + dir, cmd);
-			
-			/*dir = parsePath(dir);
-			re = new RegExp (' '+dir.substring(0,(!dir.lastIndexOf('/'))?1:dir.lastIndexOf('/')));*
+			dir = parsePath(dir);
+			re = new RegExp (' '+dir.substring(0,(!dir.lastIndexOf('/'))?1:dir.lastIndexOf('/')));
 			
 			if (avDirs.indexOf (dir)!=-1) {
 				directory = dir;
@@ -292,17 +250,7 @@ function getOutput (cmd) {
 			}
 			else {
 				output += 'cd: '+dir+': No such file or directory';
-			}*
-			new ajax.Request({
-									url: "cmd.php?action=cd&dir=",
-									onSuccess: function(data) {
-												directory = data;
-									}
-								});
-							
-			//directory.replace(mainDir,""); /* Problem: mainDir is present in the output of cmd.php */
-			//output = directory;
-			
+			}
 			break;
 			
 		case 'cat':
@@ -402,7 +350,7 @@ function getCmd (e) {
 			cmd = htmlEntities (document.getElementById('cmd').value); // XSS
 			history.unshift (cmd);
 			out = getOutput (cmd);
-			//printPrompt (cmd,out);
+			printPrompt (cmd,out);
 			histPos=-1;
 			break;
 		case 38: // UP
