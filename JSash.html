@@ -51,7 +51,7 @@
 </div>
 <script>
 
-var username = 'darkjoker';
+var username = 'joker';
 var hostname = 'localhost';
 /*var mainDir = <?php echo json_encode(getcwd()); ?> */
 var directory = '~'; // rename to curDir
@@ -61,7 +61,7 @@ var histPos = 0;
 
 var promptHTML = "<span id = 'prompt'></span><input id='cmd' type = 'text' class = 'input' autofocus autocomplete='off' maxlength = 85 onBlur='var el = this; setTimeout(function() { el.focus(); }, 0);' onKeyDown='getCmd(event);'>";
 
-// Available directories
+/* Available directories
 var avDirs = Array ('~','~/dir1','~/dir1/subdir1','~/dir1/subdir2','~/dir2','~/dir2/sub1','~/dir2/sub1/deeper','~/dir2/sub2');
 // Forbidden directories
 var fbDirs = Array ('/','/bin','/dev','/etc','/lib','/opt','/sbin','/sys','/usr','/var');
@@ -75,13 +75,14 @@ filesList['~/dir1/subdir1/empty.txt'] = "Nope, not actually empty :-O";
 filesList['~/dir2/sub1/wntgd.txt'] = "We need to go deeper";
 filesList['~/dir2/sub1/deeper/win.txt'] = "Alright, let's be honest:\nWhat exactly were you expecting to find in here?";
 filesList['~/dir2/sub2/last.txt'] = "I'm getting bored...\nThis one's the <b>last</b> file I'm creating :-)\nHope you liked JShell!\n\ndarkjoker";
-
+*/
 
 function htmlEntities (str) {
 	str = str.replace (/</g,'&lt;');
 	return str.replace (/\>/g,'&gt;');
 }
 
+/*
 function parsePath (path) {
 
 	pattern = /\/[a-z0-9_-]{1,}\.[a-z0-9_-]{1,}$/i;
@@ -113,9 +114,9 @@ function parsePath (path) {
 	
 	return path.replace('/home/'+username,'~');
 }
-
+*/
 function updatePrompt () {
-	prompt = username+'@'+hostname+':'+directory+'$ ';
+	prompt = username+'@'+hostname+':~/'+directory+'$ ';
 	document.getElementById('prompt').innerHTML = prompt;	
 }
 
@@ -141,34 +142,20 @@ function execCommand(type,request) {
 		
 		xmlhttp.onreadystatechange=function() {
 			if (xmlhttp.readyState==4 && xmlhttp.status==200) {
-				if (type == 'cd') {
-					directory = xmlhttp.responseText;
-					//printPrompt(cmd,directory);
-					return "<br>";
+				switch (type) {
+					case 'cd': directory = xmlhttp.responseText.replace('/','');
+								printPrompt(cmd,'');
+								break;
+					case 'ls': out = xmlhttp.responseText;
+								printPrompt(cmd,out);
+								break;
+					case 'cat': out = xmlhttp.responseText;
+								printPrompt(cmd,out);
+								break;
 				}
 			}
+		}
     }
-  }
-	/*ajax = XMLHttpRequest();
-	if (ajax) {
-		ajax.open("post","cmd.php", true);
-		ajax.setRequestHeader("content-type","application/x-www-form-urlencoded");
-		ajax.send(request);
-		ajax.setRequestHeader(“connection”, “close”);
-		ajax.onreadystatechange = function() {
-		if(ajax.readyState === readyState.COMPLETATO) {
-        	if(statusText[ajax.status] === “OK”)
-          		return ajax.responseText;
-        }
-        else {
-          elemento.innerHTML = “Impossibile effettuare l’operazione richiesta.<br />”;
-          elemento.innerHTML += “Errore riscontrato: ” + statusText[ajax.status];
-        }
-      } 
-    }
-	} else {
-		return "Ajax error";
-	}*/
 }
 
 function getOutput (cmd) {
@@ -208,135 +195,32 @@ function getOutput (cmd) {
 			break;
 			
 		case 'ls':
-			/* Ignores other parameters */
-			for (i=1;i<argc;i++) {
-				if (argv[i].charAt(0)!='-' && argv[i]) {
-					break;
-				}
-			}
-			if (i==argc) {
-				dir = directory;
-			}
-			else {
-				if (argv[i].charAt(0)!='/' && argv[i].charAt(0)!='~') {
-					dir = directory+'/'+argv[i];
-				}
-				else {
-					dir = argv[i];
-				}
-			}
-			display = Array ();
-			dir = parsePath (dir);
-			re = new RegExp (' '+dir.substring(0,(!dir.lastIndexOf('/'))?1:dir.lastIndexOf('/')));
-
-			// workaround :P
-			if (parsePath(dir)=='/home') {
-				output += username;
-			}
-			else if (avDirs.indexOf (dir)!=-1) {
-				for (i=0;i<avDirs.length;i++) {
-					if (!avDirs[i].indexOf(dir) && avDirs[i]!=dir) {
-						avLen=avDirs[i].indexOf(dir)+dir.length;
-						rel = avDirs[i].substring (avLen+1,(avDirs[i].substring (avLen+1).indexOf('/')!=-1)?(avDirs[i].substring (avLen+1).indexOf('/')+dir.length+1):(avDirs[i].length));
-						if (display.indexOf(rel)==-1) {
-							display.push(rel);
-						}
-					}
-				}
-				for (i in filesList) {
-					if (!i.indexOf(dir) && i.substring(dir.length+1).indexOf('/')==-1 ) {
-						display.push (i.substring(i.indexOf(dir)+dir.length+1));
-					}
-				}
-				output += display.sort().join(' ');
-			}
-			else if ((' '+fbDirs.join(' ')).search(re)!=-1) {
-				output += 'ls: cannot open directory '+dir+': Permission denied';
-			}
-			else if (filesList[dir]) {
-				output += dir.substring(dir.lastIndexOf('/')+1);
-			}
-			else {
-				output += 'ls: cannot access '+dir+': No such file or directory';
-			}
-			break;
-		
-		case 'cd':
-			/* Ignores other parameters *
-			for (i=1;i<argc;i++) {
-				if (argv[i].charAt(0)!='-' && argv[i]) {
-					break;
-				}
-			}*/
 			if (argc == 1) {
-				// cd -> cd ~
-				dir = mainDir;
+				// ls ~
+				dir = '.';
 			}
 			else {
 				dir = argv[1];
-			}
-			
-			output = execCommand("action=cd&dir=" + dir, cmd);
-			
-			/*dir = parsePath(dir);
-			re = new RegExp (' '+dir.substring(0,(!dir.lastIndexOf('/'))?1:dir.lastIndexOf('/')));*
-			
-			if (avDirs.indexOf (dir)!=-1) {
-				directory = dir;
-			}
-			else if ((' '+fbDirs.join(' ')).search(re)!=-1) {
-				output += 'cd: '+dir+': Permission denied';
-			}
-			else if (filesList[dir]) {
-				output += 'cd: '+dir+': Not a directory';
+			}	
+			output = execCommand("ls","cwd=" + directory + "&action=ls&dir=" + dir);
+			break;
+		
+		case 'cd':
+			if (argc == 1) {
+				// cd -> cd ~
+				dir = '.';
 			}
 			else {
-				output += 'cd: '+dir+': No such file or directory';
-			}*
-			new ajax.Request({
-									url: "cmd.php?action=cd&dir=",
-									onSuccess: function(data) {
-												directory = data;
-									}
-								});
-							
-			//directory.replace(mainDir,""); /* Problem: mainDir is present in the output of cmd.php */
-			//output = directory;
-			
+				dir = argv[1];
+			}	
+			output = execCommand("cd","cwd=" + directory + "&action=cd&dir=" + dir);
 			break;
 			
 		case 'cat':
-			/* Ignores other parameters */
-			for (i=1;i<argc;i++) {
-				if (argv[i].charAt(0)!='-' && argv[i]) {
-					if (argv[i].charAt(0)!='/' && argv[i].charAt(0)!='~') {
-						file = directory+'/'+argv[i];
-					}
-					else {
-						file = argv[i];
-					}
-					file = parsePath(file);
-					re = new RegExp (' '+file.substring(0,(!file.lastIndexOf('/'))?1:file.lastIndexOf('/')));
-					
-					if (filesList[file]) {
-						output += filesList[file];
-					}
-					else if (avDirs.indexOf(file)!=-1) {
-						output += 'cat: '+file+': Is a directory';
-					}
-					else if ((' '+fbDirs.join(' ')).search(re)!=-1) {
-						output += 'cat: '+file+': Permission denied';
-					}
-					else {
-						output += 'cat: '+file+': No such file or directory';
-					}
-					output += "\n";
-				}
+			if (argc == 2) {
+				file = argv[1];
+				output = execCommand("cat","cwd=" + directory + "&action=cat&file=" + file);
 			}
-			if (i==argc && !output) {
-				output += 'Usage: cat [FILE...]\n';
-			}
-			output = output.substring (0,output.length-1);
 			break;
 		
 		case 'file':
@@ -373,7 +257,7 @@ function getOutput (cmd) {
 			output += argv[0]+': command not found';
 			break;
 	}
-	return output.replace(/\n/g,'<br>');
+	//return output.replace(/\n/g,'<br>');
 }
 
 function printPrompt (cmd, output) {
@@ -401,7 +285,7 @@ function getCmd (e) {
 		case 13: // Enter
 			cmd = htmlEntities (document.getElementById('cmd').value); // XSS
 			history.unshift (cmd);
-			out = getOutput (cmd);
+			getOutput (cmd);
 			//printPrompt (cmd,out);
 			histPos=-1;
 			break;

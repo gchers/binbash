@@ -24,7 +24,7 @@ function ls($dir) {
 	if (!check_path($dir)) {
 		return "fail";
 	}
-	$res = scandir($dir);
+	$res = preg_grep('/^([^.])/', scandir($dir)); /* no hidden files are shown */
 	if ($res) {
 		return implode("<br>",$res);
 	} else {
@@ -54,6 +54,8 @@ $mainDir = getcwd();
 isset($_GET['cwd']) and $cwd = $_GET['cwd'] or $cwd = ".";
 cd($cwd);
 
+error_log(implode(" ",$_GET));
+
 if (isset($_GET['action'])) {
 	$res = NULL;
 	switch ($_GET['action']) {
@@ -74,6 +76,6 @@ if (isset($_GET['action'])) {
 		
 	}
 	$res = sanitize_output($res);
-	echo "<html><body>" . $res . "</body></html>";
+	echo $res;
 }
 ?>
