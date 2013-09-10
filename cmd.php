@@ -26,7 +26,7 @@ function ls($dir) {
 	}
 	$res = preg_grep('/^([^.])/', scandir($dir)); /* no hidden files are shown */
 	if ($res) {
-		return implode("<br>",$res);
+		return implode("\n",$res);
 	} else {
 		return False;
 	}	
@@ -45,6 +45,8 @@ function cat($file) {
 function sanitize_output($output) {
 	global $mainDir;
 	$output = str_replace($mainDir,"",$output);
+	$output = htmlspecialchars($output);
+	$output = str_replace("\n","<br>",$output);
 	return $output;
 }
 
@@ -60,7 +62,11 @@ if (isset($_GET['action'])) {
 	$res = NULL;
 	switch ($_GET['action']) {
 		case 'cd': isset($_GET['dir']) or die;
-						$res = cd($_GET['dir']);
+						if ($_GET['dir'] == '') {
+							$res = cd($mainDir);
+						} else {
+							$res = cd($_GET['dir']);
+						}
 					break;
 		case 'ls': if (isset($_GET['dir'])) {
 						$res = ls($_GET['dir']);

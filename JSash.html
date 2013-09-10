@@ -116,7 +116,11 @@ function parsePath (path) {
 }
 */
 function updatePrompt () {
-	prompt = username+'@'+hostname+':~/'+directory+'$ ';
+	if (directory != '~') {
+		prompt = username+'@'+hostname+':~/'+directory+'$ ';
+	} else {
+		prompt = username+'@'+hostname+':~$ '; /* ? */
+	}
 	document.getElementById('prompt').innerHTML = prompt;	
 }
 
@@ -128,7 +132,7 @@ function initStuff () {
 	document.getElementById('cmd').focus(); // "workaround" for firefox (and probably summin' else)
 }
 
-function execCommand(type,request) {
+function execCommand(request) {
 	if (window.XMLHttpRequest) {
 		// code for IE7+, Firefox, Chrome, Opera, Safari
 		xmlhttp=new XMLHttpRequest();
@@ -137,14 +141,20 @@ function execCommand(type,request) {
   		xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
 	}
 	if (xmlhttp) {
-		xmlhttp.open("GET","./cmd.php?" + request, true);
+		xmlhttp.open("GET","./cmd.php?" + request, false); /* synchronous request */
 		xmlhttp.send();
 		
+		//wait = true;
+		/*
 		xmlhttp.onreadystatechange=function() {
 			if (xmlhttp.readyState==4 && xmlhttp.status==200) {
 				switch (type) {
 					case 'cd': directory = xmlhttp.responseText.replace('/','');
+								if (directory == '') {
+									directory = '~';
+								}
 								printPrompt(cmd,'');
+								//return 'asdf';
 								break;
 					case 'ls': out = xmlhttp.responseText;
 								printPrompt(cmd,out);
@@ -154,8 +164,12 @@ function execCommand(type,request) {
 								break;
 				}
 			}
+			wait = false;
 		}
+		while (wait) {}; */
+		return xmlhttp.responseText;
     }
+    return 'err';
 }
 
 function getOutput (cmd) {
@@ -183,7 +197,7 @@ function getOutput (cmd) {
 			break;
 			
 		case 'pwd':
-			output += directory.replace('~','/home/'+username);
+			output += '/home/' + username + '/' + directory.replace('~','');
 			break;
 			
 		case 'whoami':
@@ -202,24 +216,35 @@ function getOutput (cmd) {
 			else {
 				dir = argv[1];
 			}	
-			output = execCommand("ls","cwd=" + directory + "&action=ls&dir=" + dir);
+			output = execCommand("cwd=" + directory + "&action=ls&dir=" + dir);
 			break;
 		
 		case 'cd':
 			if (argc == 1) {
 				// cd -> cd ~
-				dir = '.';
+				dir = '';
 			}
 			else {
 				dir = argv[1];
-			}	
-			output = execCommand("cd","cwd=" + directory + "&action=cd&dir=" + dir);
+			}
+			res = execCommand("cwd=" + directory + "&action=cd&dir=" + dir);
+			if (res != 'error') {		/* need to check != 'error', because it could be '' and be valid */
+				directory = xmlhttp.responseText.replace('/','');
+				if (directory == '') {
+					directory = '~';
+				}
+				output = '';
+			} else {
+				output = 'An error occurred.';
+			}
 			break;
 			
 		case 'cat':
 			if (argc == 2) {
 				file = argv[1];
-				output = execCommand("cat","cwd=" + directory + "&action=cat&file=" + file);
+				output = execCommand("cwd=" + directory + "&action=cat&file=" + file);
+			} else {
+				output = 'Usage: cat <filename>';
 			}
 			break;
 		
@@ -249,7 +274,7 @@ function getOutput (cmd) {
 			if (i==argc && !output) {
 				output += 'Usage: file [FILE...]\n';
 			}
-			output = output.substring (0,output.length-1);
+			//output = output.substring (0,output.length-1);
 			break;			
 
 		default:
@@ -257,7 +282,7 @@ function getOutput (cmd) {
 			output += argv[0]+': command not found';
 			break;
 	}
-	//return output.replace(/\n/g,'<br>');
+	return output.replace(/\n/g,'<br>');
 }
 
 function printPrompt (cmd, output) {
@@ -285,8 +310,8 @@ function getCmd (e) {
 		case 13: // Enter
 			cmd = htmlEntities (document.getElementById('cmd').value); // XSS
 			history.unshift (cmd);
-			getOutput (cmd);
-			//printPrompt (cmd,out);
+			out = getOutput (cmd);
+			printPrompt (cmd,out);
 			histPos=-1;
 			break;
 		case 38: // UP
