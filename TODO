@@ -1,0 +1,10 @@
+TODO
+[joker__]
+* 'file' command
+* 'cat' command: problems in output when too much
+	output.
+* TAB completion for both commands and arguments
+* '*' wildcard support?
+* 'find' function
+* 'grep' function
+
