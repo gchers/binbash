@@ -1,6 +1,6 @@
 <!--
     'binbash' is a "shell-style" website
-    Copyright (c) 2013 joker__ <g.chers at gmail.com>
+    Copyleft (c) 2013 joker__ <g.chers at gmail.com>
  
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
     
-    This project is a branch of JSash by Flavio 'darkjoker' Giobergia
+    This project is a fork of 'JSash' by Flavio 'darkjoker' Giobergia
 -->
 <html>
 <head>
@@ -124,6 +124,7 @@ function getOutput (cmd) {
 			output += " whoami&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- Display current user\n";
 			output += " hostname&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- Display hostname\n";
 			output += " ls [DIRECTORY] - List file\n";
+			output += " li&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- As 'ls' except it also shows a little description of the file\n";
 			output += " cd [DIRECTORY] - Change directory\n";
 			output += " cat [FILE...]&nbsp;&nbsp;- Concatenate FILE(s) to standard output\n";
 			output += " file&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- Determine type of FILEs\n";
@@ -258,6 +259,30 @@ function getOutput (cmd) {
 				output = "";*/
 			} else {
 				output = 'Usage: open <filename>';
+			}
+			break;
+		
+		/* list info (li) command */
+		case 'li':
+			if (argc == 1) {
+				dir = '.';
+			}
+			else {
+				dir = argv[1];
+			}	
+			res = execCommand("cwd=" + directory + "&action=info&dir=" + dir);
+			switch (res[0]) {
+				/* OK */
+				case 0: output = res[1].toString();
+						break;
+				/* RESTRICTED PATH */
+				case 1:
+					output = "Wrong way, go back home.";
+					break;
+				/* INVALID PATH */
+				case 2:
+					output = "Not a file! You'd better look for files rather than loosing your time.";
+					break;
 			}
 			break;
 		

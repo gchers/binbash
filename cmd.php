@@ -1,7 +1,7 @@
 <?php
 /*
-	'binbash' is a "shell-style" website
-    Copyright (c) 2013 joker__ <g.chers at gmail.com>
+	 'binbash' is a "shell-style" website
+    Copyleft (c) 2013 joker__ <g.chers at gmail.com>
  
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,8 +16,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
     
-    This project is a branch of JSash by Flavio 'darkjoker' Giobergia
-*/
+    This project is a fork of 'JSash' by Flavio 'darkjoker' Giobergia
 /****************
  * cmd.php 		*
  * by joker__   *************
@@ -35,7 +34,11 @@ DEFINE("E_PATH_RESTRICTION", 1); 	/* no permission to walk to the path */
 DEFINE("E_PATH_INVALID", 2); 		/* non existing */
 
 
-/* 'Sanitizing' stuff (the core of your security...take a look, and improve it ;) )*/
+
+/* Sanitizing stuff */
+/* The core of your security...take a look,
+ * and try to improve these functions ;-)
+ */
 function check_path($path) {
 	if (!strncmp(realpath($path), BASE_PATH, strlen(BASE_PATH))) {
 		return True;
@@ -53,6 +56,7 @@ function sanitize_output($output) {
 	$output = str_replace(BASE_PATH,"",$output);
 	$output = htmlspecialchars($output);
 	$output = str_replace("\n","<br>",$output);
+	//$output = str_replace(" ","&nbsp;";$output);
 	return $output;
 }
 
@@ -125,6 +129,45 @@ function catN($file, $lines) {
 }
 
 
+/*
+ * This function is an alternative to 'ls', and it provides,
+ * where present, a description of each file.
+ * The info file should be named '.$filename.info'.
+ * It should be composed as follows:
+ *  [INFO]
+ * 	descr.
+ *
+ * Where the description can occupy 1-2 lines, of <=40
+ * characters each one.
+ */
+function showinfo($dir) {
+	$code = OK;
+	$res = "";
+	if (!file_exists($dir)) {
+		$code = E_PATH_INVALID;
+	} else {
+		if (!check_path($dir)) {
+			$code = E_PATH_RESTRICTION;
+		} else {
+			$files = preg_grep('/^([^.])/', scandir($dir)); /* no hidden files are shown */
+			foreach ($files as $file) {
+				if (file_exists("." . $file . ".info")) {
+					$f = file("." . $file . ".info");
+					$off = strlen($file) + 2;
+					/* todo: check each line is lower than 41 characters */
+					//$res = $res . "<strong>" . $file . "</strong>" . ": " . implode(str_repeat(" ",$off), array_slice($f,1,3));
+					$res = $res . $file . ": " . implode(str_repeat(" ",$off), array_slice($f,1,3));
+				} else {
+					//$res = $res . "<strong>" . $file . "</strong>\n";
+					$res = $res . $file . "\n";
+				}
+			}
+		}
+	}
+	return array($code,$res);
+}
+
+
 function fileinfo($file) {
 	$code = OK;
 	$res = "";
@@ -168,10 +211,10 @@ function fileinfo($file) {
 }*/
 
 
-error_log(BASE_PATH);
+/* we're working in BASE_PATH directory, which is saw by the user as ~ */
 chdir(BASE_PATH);
-
-isset($_GET['cwd']) and $cwd = $_GET['cwd'] or $cwd = ".";
+isset($_GET['cwd']) and $cwd = $_GET['cwd'] or $cwd = BASE_PATH;
+($cwd == '~') and $cwd = BASE_PATH;
 cd(sanitize_input($cwd));
 
 error_log(implode(" ",$_GET));
@@ -206,6 +249,13 @@ if (isset($_GET['action'])) {
 						$res = fileinfo(sanitize_input($_GET['file']));
 					}
 					break;
+		case 'info': if (isset($_GET['dir'])) {
+						$res = showinfo(sanitize_input($_GET['dir']));
+					}
+					else {
+						$res = showinfo('.');
+					}
+					break;
 		/*case 'grep': if (isset($_GET['dir']) and isset($_GET['expr'])) {
 						
 						$res = grep($_GET['dir'],$_GET['expr']);
@@ -214,7 +264,7 @@ if (isset($_GET['action'])) {
 	
 	}
 	$res[1] = sanitize_output($res[1]);
-	error_log(implode(" ",$res));
+	//debug: error_log(implode(" ",$res));
 	echo json_encode($res);
 }
 ?>

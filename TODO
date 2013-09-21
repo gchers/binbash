@@ -1,11 +1,14 @@
 TODO
 [joker__]
-* 'file' command
-* 'cat' command: problems in output when too much
+[ ] 'file' command
+[ ] 'cat' command: problems in output when too much
 	output.
-* TAB completion for both commands and arguments
-* '*' wildcard support?
-* 'find' function
-* 'grep' function
-* README
+[ ] TAB completion for both commands and arguments
+[ ] '*' wildcard support?
+[ ] 'find' function
+[ ] 'grep' function
+[ ] README
+[ ] cmd.php showinfo function will became too slow.
+	Create a little db/text-file containing:
+		filename:description
 
