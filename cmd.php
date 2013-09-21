@@ -1,60 +1,178 @@
 <?php
-/* cmd.php 		*/
-/* by joker__ 	*/
-/* for a shell-like website */
+/*
+	'binbash' is a "shell-style" website
+    Copyright (c) 2013 joker__ <g.chers at gmail.com>
+ 
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+ 
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+ 
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    
+    This project is a branch of JSash by Flavio 'darkjoker' Giobergia
+*/
+/****************
+ * cmd.php 		*
+ * by joker__   *************
+ * for a shell-like website	*
+ ****************************
 
+/* PATHS */
+DEFINE("BASE_PATH", getcwd() . "/files");
+/* MAX */
+DEFINE("MAX_INPUT_LEN", 100);
+/* STATUS CODES */
+DEFINE("OK",0);
+// errors
+DEFINE("E_PATH_RESTRICTION", 1); 	/* no permission to walk to the path */
+DEFINE("E_PATH_INVALID", 2); 		/* non existing */
+
+
+/* 'Sanitizing' stuff (the core of your security...take a look, and improve it ;) )*/
 function check_path($path) {
-	global $mainDir;
-	if (!strncmp(realpath($path), $mainDir, strlen($mainDir))) {
+	if (!strncmp(realpath($path), BASE_PATH, strlen(BASE_PATH))) {
 		return True;
 	} else {
 		return False;
 	}
 }
 
-function cd($dir) {
-	if (!check_path($dir)) {
-		return "fail";
-	}
-	chdir($dir);
-	return getcwd();
-}
-
-function ls($dir) {
-	if (!check_path($dir)) {
-		return "fail";
-	}
-	$res = preg_grep('/^([^.])/', scandir($dir)); /* no hidden files are shown */
-	if ($res) {
-		return implode("\n",$res);
-	} else {
-		return False;
-	}	
-}
-
-function cat($file) {
-	if (!check_path($file)) {
-		return "fail";
-	}
-	if (!is_file($file)) {
-		return "Not a file! You'd better look for files rather than loosing your time.";
-	}
-	return file_get_contents($file, False, NULL, 0, 4096); /* max?? */
+function sanitize_input($input) {
+	$input = substr($input,0,MAX_INPUT_LEN);
+	return $input;
 }
 
 function sanitize_output($output) {
-	global $mainDir;
-	$output = str_replace($mainDir,"",$output);
+	$output = str_replace(BASE_PATH,"",$output);
 	$output = htmlspecialchars($output);
 	$output = str_replace("\n","<br>",$output);
 	return $output;
 }
 
 
-$mainDir = getcwd();
+/* Command execution */
+/* Note. All these functions return an array
+ * in this form: [status,result].
+ * Where status is the status code (fail, success)
+ * and result is the string result.
+ */
+function cd($dir) {
+	$code = OK;
+	if (!check_path($dir)) {
+		$code = E_PATH_RESTRICTION;
+	} else {
+		if (chdir($dir)) {
+		} else {
+			$code = E_PATH_INVALID;
+		}
+	}
+	return array($code, getcwd());
+}
+
+function ls($dir) {
+	$code = OK;
+	$res = "";
+	if (!file_exists($dir)) {
+		$code = E_PATH_INVALID;
+	} else {
+		if (!check_path($dir)) {
+			$code = E_PATH_RESTRICTION;
+		} else {
+			$res = implode("\n", preg_grep('/^([^.])/', scandir($dir))); /* no hidden files are shown */
+		}
+	}
+	return array($code,$res);
+}
+
+function cat($file) {
+	$code = OK;
+	$res = "";
+	if (!is_file($file)) {
+		$code = E_PATH_INVALID;
+	} else {
+		if (!check_path($file)) {
+			$code = E_PATH_RESTRICTION;
+		}
+		else {
+			$res = file_get_contents($file, False, NULL, 0, 10000); /* max?? */
+		}
+	}
+	return array($code,$res);
+}
+
+function catN($file, $lines) {
+	$code = OK;
+	$res = "";
+	if (!is_file($file)) {
+		$code = E_PATH_INVALID;
+	} else {
+		if (!check_path($file)) {
+			$code = E_PATH_RESTRICTION;
+		}
+		else {
+			$f = file($file);
+			$res = implode("", array_slice($f,0,$lines));
+		}
+	}
+	return array($code,$res);
+}
+
+
+function fileinfo($file) {
+	$code = OK;
+	$res = "";
+	if (!check_path($file)) {
+		$code = E_PATH_RESTRICTION;
+	} else if (is_dir($file)) {
+		$res = $file . ": directory";
+	} else {
+		switch(pathinfo($file, PATHINFO_EXTENSION)) {
+			case "txt": $res = $file . ": ASCII text";
+						break;
+			/* working on it... */
+			default: $res = "";
+		}
+	}
+	return array($code,$res);
+}
+
+/*function grep($dir,$str) {
+	$code = OK;
+	$res = "";
+	foreach (glob($dir) as $file) {
+		/*if (!file_exists($file)) {
+			//$code = E_PATH_INVALID;
+		} else {
+			if (!check_path($dir)) {
+				//$code = E_PATH_RESTRICTION;
+			} else {
+				//$files = preg_grep('/^([^.])/', scandir($dir)); /* no hidden files are shown *
+				//foreach ($files as $file) {
+				preg_match($str,file_get_contents($file, False, NULL)) and $res += "\n" . $file;
+			}
+		}
+		//if (file_exists($file) and check_path($file)) {
+			if (preg_match($str,file_get_contents($file, False, NULL))) {
+				$res += "\n" . $file;
+			}
+		//}
+	}
+	return array($code,$res);
+}*/
+
+
+error_log(BASE_PATH);
+chdir(BASE_PATH);
 
 isset($_GET['cwd']) and $cwd = $_GET['cwd'] or $cwd = ".";
-cd($cwd);
+cd(sanitize_input($cwd));
 
 error_log(implode(" ",$_GET));
 
@@ -63,25 +181,40 @@ if (isset($_GET['action'])) {
 	switch ($_GET['action']) {
 		case 'cd': isset($_GET['dir']) or die;
 						if ($_GET['dir'] == '') {
-							$res = cd($mainDir);
+							$res = cd(BASE_PATH);
 						} else {
-							$res = cd($_GET['dir']);
+							$res = cd(sanitize_input($_GET['dir']));
 						}
 					break;
 		case 'ls': if (isset($_GET['dir'])) {
-						$res = ls($_GET['dir']);
+						$res = ls(sanitize_input($_GET['dir']));
 					}
 					else {
 						$res = ls('.');
 					}
 					break;
 		case 'cat': if (isset($_GET['file'])) {
-						$res = cat($_GET['file']);
+						$res = cat(sanitize_input($_GET['file']));
 					}
 					break;
-		
+		case 'head': if (isset($_GET['file'])) {
+						isset($_GET['lines']) and $lines = sanitize_input($_GET['lines']) or $lines = 10;
+						$res = catN(sanitize_input($_GET['file']),$lines);
+					}
+					break;
+		case 'file': if (isset($_GET['file'])) {
+						$res = fileinfo(sanitize_input($_GET['file']));
+					}
+					break;
+		/*case 'grep': if (isset($_GET['dir']) and isset($_GET['expr'])) {
+						
+						$res = grep($_GET['dir'],$_GET['expr']);
+					}
+					break;*/
+	
 	}
-	$res = sanitize_output($res);
-	echo $res;
+	$res[1] = sanitize_output($res[1]);
+	error_log(implode(" ",$res));
+	echo json_encode($res);
 }
 ?>
