@@ -54,9 +54,10 @@ function sanitize_input($input) {
 
 function sanitize_output($output) {
 	$output = str_replace(BASE_PATH,"",$output);
+	$output = str_replace("&nbsp;","nbsp",$output); /* is there a better way? */
 	$output = htmlspecialchars($output);
+	$output = str_replace("nbsp","&nbsp;",$output);
 	$output = str_replace("\n","<br>",$output);
-	//$output = str_replace(" ","&nbsp;";$output);
 	return $output;
 }
 
@@ -137,7 +138,7 @@ function catN($file, $lines) {
  *  [INFO]
  * 	descr.
  *
- * Where the description can occupy 1-2 lines, of <=40
+ * Where the description can occupy 1-2 lines, of <=45	
  * characters each one.
  */
 function showinfo($dir) {
@@ -154,9 +155,9 @@ function showinfo($dir) {
 				if (file_exists("." . $file . ".info")) {
 					$f = file("." . $file . ".info");
 					$off = strlen($file) + 2;
-					/* todo: check each line is lower than 41 characters */
-					//$res = $res . "<strong>" . $file . "</strong>" . ": " . implode(str_repeat(" ",$off), array_slice($f,1,3));
-					$res = $res . $file . ": " . implode(str_repeat(" ",$off), array_slice($f,1,3));
+					/* todo: check each line is lower than 46 characters */
+					//$res = $res . "<strong>" . $file . "</strong>" . ": " . implode(str_repeat("&nbsp;",$off), array_slice($f,1,3));
+					$res = $res . $file . ": " . implode(str_repeat("&nbsp;",$off), array_slice($f,1,3));
 				} else {
 					//$res = $res . "<strong>" . $file . "</strong>\n";
 					$res = $res . $file . "\n";
